@@ -1,6 +1,7 @@
 __author__ = "Tibor Sloboda"
 
 import uuid
+import itertools
 from typing import Tuple, TypedDict, List
 import pandas as pd
 
@@ -33,10 +34,10 @@ def dictify(df_places: pd.DataFrame, df_transitions: pd.DataFrame, df_arcs: pd.D
 
 
 def __rand_uuid():
-    return uuid.uuid1()
+    return uuid.uuid4()
 
 
-def __get_max_xy(df_places: pd.Dataframe, df_transitions: pd.Dataframe) -> Tuple[int, int]:
+def __get_max_xy(df_places: pd.DataFrame, df_transitions: pd.DataFrame) -> Tuple[int, int]:
     places_max_x = df_places['x'].max()
     transitions_max_x = df_transitions['x'].max()
     x = max(places_max_x, transitions_max_x)
@@ -64,20 +65,28 @@ def update_ids(df_dict: PetriDict) -> PetriDict:
     df_transitions = df_dict['transitions']
     df_arcs = df_dict['arcs']
 
-    for i in range(len(df_arcs)):
-        new_uuid_from = __rand_uuid()
-        new_uuid_to = __rand_uuid()
-        new_uuid_arc = __rand_uuid()
+    rep_dict = {i: __rand_uuid() for i in itertools.chain(df_places.id, df_transitions.id)}
+    rep_dict_arc_id = {i: __rand_uuid() for i in itertools.chain(df_arcs.id)}
 
-        df_transitions.loc[df_transitions.id == df_arcs[i].sourceId, 'sourceId'] = new_uuid_from
-        df_transitions.loc[df_places.id == df_arcs[i].sourceId, 'destinationId'] = new_uuid_from
+    df_arcs.replace(rep_dict, inplace=True)
+    df_arcs.replace(rep_dict_arc_id, inplace=True)
+    df_places.replace(rep_dict, inplace=True)
+    df_transitions.replace(rep_dict, inplace=True)
 
-        df_transitions.loc[df_transitions.id == df_arcs[i].destinationId, 'sourceId'] = new_uuid_to
-        df_transitions.loc[df_places.id == df_arcs[i].destinationId, 'destinationId'] = new_uuid_to
-
-        df_arcs[i].from_id = new_uuid_from
-        df_arcs[i].to_id = new_uuid_to
-        df_arcs[i].id = new_uuid_arc
+    # for i in range(len(df_arcs)):
+    #     new_uuid_from = __rand_uuid()
+    #     new_uuid_to = __rand_uuid()
+    #     new_uuid_arc = __rand_uuid()
+    #
+    #     df_transitions.loc[df_transitions.id == df_arcs['sourceId'][i], 'id'] = new_uuid_from
+    #     df_transitions.loc[df_transitions.id == df_arcs['destinationId'][i], 'id'] = new_uuid_to
+    #
+    #     df_places.loc[df_places.id == df_arcs['sourceId'][i], 'id'] = new_uuid_from
+    #     df_places.loc[df_places.id == df_arcs['destinationId'][i], 'id'] = new_uuid_to
+    #
+    #     df_arcs.at[i, 'sourceId'] = new_uuid_from
+    #     df_arcs.at[i, 'destinationId'] = new_uuid_to
+    #     df_arcs.at[i, 'id'] = new_uuid_arc
 
     return dictify(df_places, df_transitions, df_arcs)
 

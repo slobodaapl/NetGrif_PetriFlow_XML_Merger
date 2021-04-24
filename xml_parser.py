@@ -1,38 +1,55 @@
-__author__ = "Olesia Melnychyn"
+__author__ = ["Olesia Melnychyn", "Tibor Sloboda"]
 
 import pandas as pd
 import xmltodict
 
 
 def parse_join_xml(filename):
-    df_places = pd.DataFrame(columns=['id', 'x', 'y', 'label'])
-    df_transition = pd.DataFrame(columns=['id', 'x', 'y', 'label'])
-    df_arc = pd.DataFrame(columns=['id', 'type', 'sourceId', 'destinationId', 'multiplicity'])
+    df_places = {}
+    df_transitions = {}
+    df_arcs = {}
+    places_i = 0
+    transitions_i = 0
+    arcs_i = 0
     with open(filename, 'r') as file:
         data = file.read().replace('\n', '')
-        print(data)
         obj = xmltodict.parse(data)
-        for (item, value) in obj.items():
+        for item, value in obj.items():
             for idx, val in value.items():
-                new_row = {'id': "", 'x': "", 'y': "", 'label': ""}
+                if type(val) is str:
+                    continue
+
+                try:
+                    iter(val)
+                except TypeError:
+                    continue
+
                 for va in val:
-                    for i, j in va.items():
-                        if i == "id":
-                            new_row["id"] = j
-                        if i == "x":
-                            new_row["x"] = j
-                        if i == "y":
-                            new_row["y"] = j
-                        if i == "label":
-                            new_row["label"] = j
+                    new_row = {'id': "", 'x': "", 'y': "", 'label': ""}
 
-                if idx == "transition":
-                    df_transition = df_transition.append(new_row, ignore_index=True)
-                elif idx == "place":
-                    df_places = df_places.append(new_row, ignore_index=True)
+                    try:
+                        va.items()
+                    except AttributeError:
+                        continue
 
-                if idx == "arc":
-                    for va in val:
+                    if idx in ("transition", "place"):
+                        for i, j in va.items():
+                            if i == "id":
+                                new_row["id"] = j
+                            if i == "x":
+                                new_row["x"] = int(j)
+                            if i == "y":
+                                new_row["y"] = int(j)
+                            if i == "label":
+                                new_row["label"] = j
+
+                    if idx == "transition":
+                        df_transitions[transitions_i] = new_row
+                        transitions_i += 1
+                    elif idx == "place":
+                        df_places[places_i] = new_row
+                        places_i += 1
+                    elif idx == "arc":
                         new_row = {'id': "", 'type': "", 'sourceId': "", 'destinationId': "", "multiplicity": ""}
                         for i, j in va.items():
                             if i == "id":
@@ -45,8 +62,12 @@ def parse_join_xml(filename):
                                 new_row["destinationId"] = j
                             if i == "multiplicity":
                                 new_row["multiplicity"] = j
-                        df_arc = df_arc.append(new_row, ignore_index=True)
-    return df_places, df_transition, df_arc
+                        df_arcs[arcs_i] = new_row
+                        arcs_i += 1
+
+    return pd.DataFrame.from_dict(df_places, "index"), \
+        pd.DataFrame.from_dict(df_transitions, "index"), \
+        pd.DataFrame.from_dict(df_arcs, "index")
 
 
 def dfs_to_xml(df_places: pd.DataFrame, df_transitions: pd.DataFrame, df_arcs: pd.DataFrame, file: str) -> None:
