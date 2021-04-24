@@ -3,9 +3,16 @@ This tool is a simple utility that allows merging of several NetGrif models into
 Currently this only works if the model only contains places, transitions and arcs.
 Roles, data, and more, are currently not yet supported and will not be carried over.
 
+**Requires Python >= 3.8.0**
+
 
 ## Usage
-Download the files or clone the repository to your chosen folder, then run the following command:
+Download the files or clone the repository to your chosen folder.
+After that is done, open your terminal/console and input the following command:
+
+    pip install -r requirements.txt
+    
+Then, to run the merger, run the following command:
 
     python main.py path_to_your_input/input.txt desired_output_path/output.xml
 
